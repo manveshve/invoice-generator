@@ -1,0 +1,89 @@
+{
+  "products": [
+    {
+      "id": 1,
+      "name": "Aloo Chips",
+      "unit": "KG",
+      "price": 550
+    },
+    {
+      "id": 2,
+      "name": "Grated Aloo Chips",
+      "unit": "KG",
+      "price": 550
+    },
+    {
+      "id": 3,
+      "name": "Aloo Papad",
+      "unit": "KG",
+      "price": 550
+    },
+    {
+      "id": 4,
+      "name": "Salla Mirapakayalu",
+      "unit": "KG",
+      "price": 600
+    },
+    {
+      "id": 5,
+      "name": "Gulabi Puvvulu",
+      "unit": "KG",
+      "price": 450
+    },
+    {
+      "id": 6,
+      "name": "Ambatappadalu",
+      "unit": "KG",
+      "price": 500
+    },
+    {
+      "id": 7,
+      "name": "Supari",
+      "unit": "KG",
+      "price": 500
+    },
+    {
+      "id": 8,
+      "name": "Pan Masala",
+      "unit": "KG",
+      "price": 750
+    },
+    {
+      "id": 9,
+      "name": "Gummadikaya Vadiyaalu",
+      "unit": "KG",
+      "price": 500
+    },
+    {
+      "id": 10,
+      "name": "Tomato Saggubiyyam Vadiyaalu",
+      "unit": "KG",
+      "price": 450
+    },
+    {
+      "id": 11,
+      "name": "Plain Saggubiyyam Vadiyaalu",
+      "unit": "KG",
+      "price": 350
+    },
+    {
+      "id": 12,
+      "name": "Paalakura Vadiyaalu",
+      "unit": "KG",
+      "price": 350
+    },
+    {
+      "id": 13,
+      "name": "Pesara Vadiyaalu",
+      "unit": "KG",
+      "price": 500
+    },
+    {
+      "id": 14,
+      "name": "Garlic Butter",
+      "unit": "KG",
+      "price": 900
+    }
+  ],
+  "invoices": []
+}

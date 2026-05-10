@@ -3,14 +3,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/format";
+import { createProduct, deleteProductById, listProducts, type Product, updateProduct } from "@/lib/products";
 import { Check, FileEdit, Package, PlusCircle, Trash2, X } from "lucide-react";
-
-type Product = {
-  id: number;
-  name: string;
-  unit: string;
-  price: number;
-};
 
 type ProductForm = {
   name: string;
@@ -20,27 +14,27 @@ type ProductForm = {
 
 export default function ProductManagement() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [hasLoadedProducts, setHasLoadedProducts] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [editingId, setEditingId] = useState<number | "new" | null>(null);
   const [form, setForm] = useState<ProductForm>({ name: "", unit: "KG", price: "0" });
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
-    const saved = localStorage.getItem("products");
-    if (saved) {
+    const refreshProducts = async () => {
       try {
-        setProducts(JSON.parse(saved));
-      } catch {
-        setProducts([]);
+        setProducts(await listProducts());
+      } finally {
+        setIsLoading(false);
       }
-    }
-    setHasLoadedProducts(true);
-  }, []);
+    };
 
-  useEffect(() => {
-    if (!hasLoadedProducts) return;
-    localStorage.setItem("products", JSON.stringify(products));
-  }, [hasLoadedProducts, products]);
+    void refreshProducts();
+    window.addEventListener("focus", refreshProducts);
+
+    return () => {
+      window.removeEventListener("focus", refreshProducts);
+    };
+  }, []);
 
   const beginAddProduct = () => {
     setEditingId("new");
@@ -60,7 +54,7 @@ export default function ProductManagement() {
     setFormError("");
   };
 
-  const saveProduct = () => {
+  const saveProduct = async () => {
     const name = form.name.trim();
     const unit = form.unit.trim();
     const price = Number(form.price);
@@ -81,27 +75,18 @@ export default function ProductManagement() {
     }
 
     if (editingId === "new") {
-      setProducts([
-        ...products,
-        {
-          id: Date.now(),
-          name,
-          unit,
-          price,
-        },
-      ]);
+      const product = await createProduct({ name, unit, price });
+      setProducts([...products, product]);
     } else if (editingId !== null) {
-      setProducts(
-        products.map((product) =>
-          product.id === editingId ? { ...product, name, unit, price } : product,
-        ),
-      );
+      const updatedProduct = await updateProduct(editingId, { name, unit, price });
+      setProducts(products.map((product) => (product.id === editingId ? updatedProduct : product)));
     }
 
     cancelEdit();
   };
 
-  const deleteProduct = (id: number) => {
+  const deleteProduct = async (id: number) => {
+    await deleteProductById(id);
     setProducts(products.filter((p) => p.id !== id));
     if (editingId === id) {
       cancelEdit();
@@ -177,7 +162,13 @@ export default function ProductManagement() {
             </thead>
             <tbody className="divide-y divide-border">
               {editingId === "new" && renderEditRow("new-product")}
-              {products.length === 0 && editingId !== "new" ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center text-muted-foreground bg-card">
+                    Loading products...
+                  </td>
+                </tr>
+              ) : products.length === 0 && editingId !== "new" ? (
                 <tr>
                   <td colSpan={4} className="px-6 py-12 text-center text-muted-foreground bg-card">
                     <div className="flex flex-col items-center justify-center">
@@ -210,7 +201,7 @@ export default function ProductManagement() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => deleteProduct(product.id)}
+                            onClick={() => void deleteProduct(product.id)}
                             className="gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
                           >
                             <Trash2 className="h-4 w-4" />

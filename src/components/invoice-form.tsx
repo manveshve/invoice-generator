@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
+import { listProducts, type Product } from "@/lib/products";
 
 const lineItemSchema = z.object({
   lineNumber: z.number(),
@@ -31,13 +32,6 @@ const invoiceSchema = z.object({
 });
 
 type FormValues = z.infer<typeof invoiceSchema>;
-
-type Product = {
-  id: number;
-  name: string;
-  unit: string;
-  price: number;
-};
 
 interface InvoiceFormProps {
   defaultValues?: Partial<FormValues>;
@@ -69,14 +63,11 @@ export function InvoiceForm({ defaultValues, onSubmit, isSubmitting }: InvoiceFo
   const watchLineItems = useWatch({ control: form.control, name: "lineItems" });
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("products");
-    if (!saved) return;
-
-    try {
-      setProducts(JSON.parse(saved));
-    } catch {
-      setProducts([]);
-    }
+    listProducts()
+      .then(setProducts)
+      .catch(() => {
+        setProducts([]);
+      });
   }, []);
 
   const productOptions = useMemo(() => {
