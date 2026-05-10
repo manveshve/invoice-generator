@@ -2,12 +2,13 @@ import fs from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createServer as createViteServer } from "vite";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.join(__dirname, "data");
 const dataFile = path.join(dataDir, "store.json");
+const distDir = path.join(__dirname, "dist");
 const port = Number(process.env.PORT || 5173);
+const isProduction = process.env.NODE_ENV === "production";
 
 const defaultStore = {
   products: [],
@@ -79,6 +80,52 @@ function sendJson(res, status, data) {
 
 function sendError(res, status, message) {
   sendJson(res, status, { error: message });
+}
+
+const mimeTypes = {
+  ".css": "text/css",
+  ".gif": "image/gif",
+  ".html": "text/html",
+  ".jpg": "image/jpeg",
+  ".js": "text/javascript",
+  ".json": "application/json",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".txt": "text/plain",
+  ".webp": "image/webp",
+};
+
+async function fileExists(filePath) {
+  try {
+    const stats = await fs.stat(filePath);
+    return stats.isFile();
+  } catch {
+    return false;
+  }
+}
+
+async function serveStatic(req, res) {
+  const url = new URL(req.url || "/", `http://${req.headers.host}`);
+  const pathname = decodeURIComponent(url.pathname);
+  const requestedPath = path.normalize(path.join(distDir, pathname));
+
+  if (!requestedPath.startsWith(distDir)) {
+    sendError(res, 403, "Forbidden");
+    return;
+  }
+
+  const filePath = (await fileExists(requestedPath))
+    ? requestedPath
+    : path.join(distDir, "index.html");
+
+  try {
+    const content = await fs.readFile(filePath);
+    const contentType = mimeTypes[path.extname(filePath)] || "application/octet-stream";
+    res.writeHead(200, { "content-type": contentType });
+    res.end(content);
+  } catch {
+    sendError(res, 404, "Not found");
+  }
 }
 
 async function handleApi(req, res) {
@@ -252,10 +299,16 @@ async function handleApi(req, res) {
   return false;
 }
 
-const vite = await createViteServer({
-  server: { middlewareMode: true },
-  appType: "spa",
-});
+let vite = null;
+
+if (!isProduction) {
+  const { createServer: createViteServer } = await import("vite");
+
+  vite = await createViteServer({
+    server: { middlewareMode: true },
+    appType: "spa",
+  });
+}
 
 const server = http.createServer(async (req, res) => {
   if (req.url?.startsWith("/api/")) {
@@ -269,11 +322,15 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  vite.middlewares(req, res, () => {
-    if (!res.writableEnded) {
-      sendError(res, 404, "Not found");
-    }
-  });
+  if (isProduction) {
+    await serveStatic(req, res);
+  } else {
+    vite.middlewares(req, res, () => {
+      if (!res.writableEnded) {
+        sendError(res, 404, "Not found");
+      }
+    });
+  }
 });
 
 server.listen(port, "0.0.0.0");

@@ -85,5 +85,25 @@
       "price": 900
     }
   ],
-  "invoices": []
+  "invoices": [
+    {
+      "invoiceDate": "2026-05-10",
+      "dueDate": "2026-06-09",
+      "customerName": "Test",
+      "customerPhone": "+919123456789",
+      "lineItems": [
+        {
+          "lineNumber": 1,
+          "productName": "Garlic Butter",
+          "quantity": 1,
+          "price": 900
+        }
+      ],
+      "notes": "",
+      "status": "draft",
+      "id": 1,
+      "invoiceNumber": "INV-00001",
+      "totalAmount": 900
+    }
+  ]
 }
