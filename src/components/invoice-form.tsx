@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -32,6 +32,13 @@ const invoiceSchema = z.object({
 
 type FormValues = z.infer<typeof invoiceSchema>;
 
+type Product = {
+  id: number;
+  name: string;
+  unit: string;
+  price: number;
+};
+
 interface InvoiceFormProps {
   defaultValues?: Partial<FormValues>;
   onSubmit: (data: InvoiceInput | InvoiceUpdate) => void;
@@ -39,6 +46,8 @@ interface InvoiceFormProps {
 }
 
 export function InvoiceForm({ defaultValues, onSubmit, isSubmitting }: InvoiceFormProps) {
+  const [products, setProducts] = useState<Product[]>([]);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(invoiceSchema),
     defaultValues: {
@@ -58,6 +67,38 @@ export function InvoiceForm({ defaultValues, onSubmit, isSubmitting }: InvoiceFo
   });
 
   const watchLineItems = useWatch({ control: form.control, name: "lineItems" });
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem("products");
+    if (!saved) return;
+
+    try {
+      setProducts(JSON.parse(saved));
+    } catch {
+      setProducts([]);
+    }
+  }, []);
+
+  const productOptions = useMemo(() => {
+    const selectedProducts = (watchLineItems || [])
+      .map((item) => item.productName)
+      .filter(Boolean)
+      .map((name, index) => ({
+        id: `selected-${index}`,
+        name,
+        unit: "",
+        price: Number(watchLineItems[index]?.price) || 0,
+      }));
+
+    const productsByName = new Map<string, Product | (typeof selectedProducts)[number]>();
+    [...products, ...selectedProducts].forEach((product) => {
+      if (!productsByName.has(product.name)) {
+        productsByName.set(product.name, product);
+      }
+    });
+
+    return Array.from(productsByName.values());
+  }, [products, watchLineItems]);
 
   const subtotal = watchLineItems.reduce((acc, item) => {
     return acc + (Number(item.quantity) || 0) * (Number(item.price) || 0);
@@ -203,7 +244,38 @@ export function InvoiceForm({ defaultValues, onSubmit, isSubmitting }: InvoiceFo
                         <FormItem>
                           <FormLabel className="md:hidden">Product/Service</FormLabel>
                           <FormControl>
-                            <Input placeholder="Description" {...field} />
+                            <Select
+                              value={field.value}
+                              onValueChange={(value) => {
+                                const product = productOptions.find((item) => item.name === value);
+                                field.onChange(value);
+
+                                if (product) {
+                                  form.setValue(`lineItems.${index}.price`, product.price, {
+                                    shouldDirty: true,
+                                    shouldValidate: true,
+                                  });
+                                }
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select product/service" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {productOptions.length === 0 ? (
+                                  <div className="px-2 py-2 text-sm text-muted-foreground">
+                                    Add products from the Products page first.
+                                  </div>
+                                ) : (
+                                  productOptions.map((product) => (
+                                    <SelectItem key={`${product.id}-${product.name}`} value={product.name}>
+                                      {product.name}
+                                      {product.unit ? ` (${product.unit})` : ""}
+                                    </SelectItem>
+                                  ))
+                                )}
+                              </SelectContent>
+                            </Select>
                           </FormControl>
                           <FormMessage />
                         </FormItem>

@@ -1,6 +1,6 @@
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarProvider, SidebarGroup, SidebarGroupContent } from "@/components/ui/sidebar";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, FileText, PlusCircle } from "lucide-react";
+import { LayoutDashboard, FileText, Package, PlusCircle } from "lucide-react";
 import React from "react";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -35,6 +35,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                       <Link href="/invoices" className="flex items-center gap-3">
                         <FileText className="w-4 h-4" />
                         <span>Invoices</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={location === "/products"}>
+                      <Link href="/products" className="flex items-center gap-3">
+                        <Package className="w-4 h-4" />
+                        <span>Products</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
